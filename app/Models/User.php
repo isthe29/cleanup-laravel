@@ -17,7 +17,9 @@ class User extends Authenticatable
     protected $fillable = [
         'usr_name',
         'password',
+        'remember_token',
         'registered_as',
+
     ];
 
     // Hide password
