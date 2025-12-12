@@ -8,6 +8,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\OrganizerController;
 use App\Http\Controllers\CreateEventController;
+use App\Http\Controllers\VolunteerController;
 
 // Login
 Route::get('/login', [LoginController::class, 'showLogin'])->name('login');
@@ -37,8 +38,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard/organizer', [OrganizerController::class, 'dashboard'])
         ->name('dashboard.organizer');
-
-     Route::get('/organizer/create-event', [CreateEventController::class, 'showCreateEvent'])
+    Route::get('/dashboard/volunteer', [VolunteerController::class, 'index'])->name('volunteer.dashboard');
+    Route::post('/volunteer/join-event/{id}', [VolunteerController::class, 'joinEvent'])->name('volunteer.joinEvent');
+    
+    Route::get('/organizer/create-event', [CreateEventController::class, 'showCreateEvent'])
         ->name('organizer.createEventForm');
 
     Route::post('/organizer/create-event', [CreateEventController::class, 'createEvent'])

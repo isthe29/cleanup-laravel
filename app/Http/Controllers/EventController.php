@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventLocation;
 use App\Models\Organizer;
+use Carbon\Carbon;
 
 class EventController extends Controller
 {
@@ -47,4 +48,45 @@ class EventController extends Controller
 
         return view('dashboard.partials.event_cards', compact('events'))->render();
     }
+
+    public static function trackEvents($orgId)
+{
+    $today = now()->startOfDay();
+
+    // Fetch events for this organizer
+    $events = Event::where('org_id', $orgId)->get();
+
+    $upcoming = [];
+    $ongoing  = [];
+
+    foreach ($events as $event) {
+
+        $eventStart = Carbon::parse($event->evt_date)->startOfDay();
+        $eventEnd   = Carbon::parse($event->end_date)->endOfDay();
+
+        // Update status automatically
+        if ($today < $eventStart) {
+            $event->status = 'upcoming';
+        } elseif ($today >= $eventStart && $today <= $eventEnd) {
+            $event->status = 'ongoing';
+        } else {
+            $event->status = 'completed';
+        }
+
+        $event->save();
+
+        // Push into the arrays for the dashboard
+        if ($event->status == 'upcoming') {
+            $upcoming[] = $event;
+        } elseif ($event->status == 'ongoing') {
+            $ongoing[] = $event;
+        }
+    }
+
+    return [
+        'upcoming' => $upcoming,
+        'ongoing'  => $ongoing
+    ];
+}
+
 }

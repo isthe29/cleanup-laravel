@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Organizer extends Model
 {
     protected $table = 'organizer';
-    protected $primarykey = 'org_id';
+    protected $primaryKey = 'org_id';
     public $incrementing = false; // if false means fk or not initialized not A.I; add to $fillable 
     protected $keytype = 'int';
 

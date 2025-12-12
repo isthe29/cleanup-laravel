@@ -7,6 +7,10 @@ use App\Models\Event;
 use App\Models\Organizer;
 use App\Models\OrganizerChart;
 use App\Models\EventLocation;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CreateEventController extends Controller
 {
@@ -17,27 +21,52 @@ class CreateEventController extends Controller
 
     public function createEvent(Request $request)
     {
+        // Validate input
         $request->validate([
             'evt_name'        => 'required|string|max:255',
             'evt_details'     => 'required|string',
             'evt_date'        => 'required|date',
             'evt_loctn_name'  => 'required|string|max:255',
-            'map_details'     => 'nullable|url|max:1000', // allow Google Maps link or nullable
+            'map_details'     => 'nullable|string',
         ]);
 
-        // determine organizer id: prefer user's org_id if present, otherwise Auth id
+        // Determine organizer id
         $orgId = Auth::user()->org_id ?? Auth::id();
 
         // Find organizer record
         $organizer = Organizer::where('org_id', $orgId)->first();
-        if (! $organizer) {
+        if (!$organizer) {
             return back()->withErrors(['organizer' => 'Organizer record not found.'])->withInput();
+        }
+
+        // --- Handle Google Maps embed safely ---
+        $mapInput = $request->map_details;
+        $safeMapUrl = null;
+
+        if ($mapInput) {
+            // If user pasted a full iframe, extract src
+            if (Str::contains($mapInput, '<iframe')) {
+                preg_match('/src="([^"]+)"/', $mapInput, $matches);
+                $srcUrl = $matches[1] ?? null;
+                if ($srcUrl && Str::startsWith($srcUrl, 'https://www.google.com/maps/embed')) {
+                    $safeMapUrl = $srcUrl;
+                }
+            } else {
+                // If user pasted a direct share URL, convert to embed
+                if (Str::startsWith($mapInput, 'https://goo.gl') || Str::startsWith($mapInput, 'https://maps.app.goo.gl')) {
+                    // Use Google Maps "place" embed format
+                    // Users can still paste normal Google Maps URL as-is
+                    $safeMapUrl = str_replace('/maps/', '/maps/embed?', $mapInput);
+                } elseif (Str::startsWith($mapInput, 'https://www.google.com/maps/embed')) {
+                    $safeMapUrl = $mapInput;
+                }
+            }
         }
 
         DB::beginTransaction();
 
         try {
-            // 1) create event
+            // Create Event
             $event = Event::create([
                 'org_id' => $organizer->org_id,
                 'evt_name' => $request->evt_name,
@@ -46,33 +75,35 @@ class CreateEventController extends Controller
                 'trsh_collected_kg' => 0,
             ]);
 
-            // 2) create event_location row referencing the new event
-            EventLocation::create([
+            if (!$event) {
+                throw new \Exception('Event creation failed.');
+            }
+
+            // Create EventLocation with safe map URL
+            $eventLocation = EventLocation::create([
                 'evt_id' => $event->evt_id,
                 'evt_loctn_name' => $request->evt_loctn_name,
-                'map_details' => $request->map_details,
+                'map_details' => $safeMapUrl,
             ]);
 
-            // 3) update organizer totals
+            if (!$eventLocation) {
+                throw new \Exception('Event Location creation failed.');
+            }
+
+            // Update organizer totals
             $organizer->increment('totl_evts_orgzd');
 
-            // 4) update organizer_chart for the month of the event
+            // Update organizer chart for the month
             $month = intval(date('m', strtotime($request->evt_date))); // 1-12
 
-            $chart = OrganizerChart::where('org_id', $organizer->org_id)
-                ->where('month', $month)
-                ->first();
+            $chart = OrganizerChart::firstOrNew([
+                'org_id' => $organizer->org_id,
+                'month' => $month
+            ]);
 
-            if ($chart) {
-                $chart->increment('evts_orgzd_count');
-            } else {
-                OrganizerChart::create([
-                    'org_id' => $organizer->org_id,
-                    'month' => $month,
-                    'evts_orgzd_count' => 1,
-                    'totl_partpts_count' => 0,
-                ]);
-            }
+            $chart->evts_orgzd_count = ($chart->evts_orgzd_count ?? 0) + 1;
+            $chart->totl_partpts_count = $chart->totl_partpts_count ?? 0;
+            $chart->save();
 
             DB::commit();
 
@@ -81,8 +112,11 @@ class CreateEventController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            // log the exception in your real app: Log::error($e);
-            return back()->withErrors(['error' => 'Failed to create event.'])->withInput();
+            Log::error('CreateEventController Error: '.$e->getMessage().' in '.$e->getFile().' line '.$e->getLine());
+
+            return back()->withErrors([
+                'error' => 'Failed to create event. ' . $e->getMessage()
+            ])->withInput();
         }
     }
 }

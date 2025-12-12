@@ -1,6 +1,7 @@
 @extends('layouts.logged')
 
 @section('title', 'Events')
+@section('events', 'active')
 
 @push('styles')
 <style>
@@ -39,7 +40,7 @@ body { background: #252525; scroll-behavior: smooth; }
         @forelse($events as $event)
         <div class="col-lg-4 col-md-6 col-sm-12 event-card-wrapper">
             <div class="event-card">
-                @if($event->location)
+                @if($event->location && $event->location->map_details)
                     <iframe class="event-map" src="{{ $event->location->map_details }}" allowfullscreen="" loading="lazy"></iframe>
                 @endif
                 <div class="event-info">
@@ -64,7 +65,7 @@ body { background: #252525; scroll-behavior: smooth; }
                         <p><strong>Organizer:</strong> {{ $event->organizer->org_name ?? 'Organizer info here' }}</p>
                         <p>{{ $event->evt_details }}</p>
                         <p><strong>Location Map:</strong></p>
-                        @if($event->location)
+                        @if($event->location && $event->location->map_details)
                             <iframe class="event-map" src="{{ $event->location->map_details }}" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                         @endif
                         <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($event->evt_date)->format('F j, Y') }} @if($event->end_date) - {{ \Carbon\Carbon::parse($event->end_date)->format('F j, Y') }} @endif</p>
@@ -98,11 +99,7 @@ function filterEvents() {
 
     cards.forEach(card => {
         const title = card.querySelector('.event-name').textContent.toUpperCase();
-        if (title.indexOf(input) > -1) {
-            card.style.display = '';
-        } else {
-            card.style.display = 'none';
-        }
+        card.style.display = title.indexOf(input) > -1 ? '' : 'none';
     });
 }
 </script>

@@ -63,7 +63,7 @@ class LoginController extends Controller
             ? '/dashboard/organizer'
             : '/dashboard/volunteer';
 
-        return redirect($redirectRoute)->with('success', 'Welcome back!');
+        return redirect($redirectRoute)->with('success', 'Logged in successfully!');
     }
 
     // Logout

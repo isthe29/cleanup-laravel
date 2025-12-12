@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
 
   <style>
-    body { background: #252525; scroll-behavior: smooth; }
+    body { background: #252525; font-family: 'Figtree', sans-serif; scroll-behavior: smooth; }
     .body-container { background: linear-gradient(to bottom, rgba(13, 110, 253, 1) 0%, rgba(0, 161, 230, 0.69) 50%, rgba(117, 211, 255, 0.45) 100%); border-radius: 10px; margin-top: 5px; margin-bottom: 5px;}
     .nav-link.active { font-weight: bold; }
     .navbar-blur { border-radius: 10px;}

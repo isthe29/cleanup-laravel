@@ -26,13 +26,19 @@ class Event extends Model
         return $this->hasOne(EventLocation::class, 'evt_id', 'evt_id'); //child, parent
     } 
 
-    public function participation() {
-        return $this->hasMany(EventParticipation::class, 'evt_id'); //normal for pk != fk
-    }
-
-    public function event()
-    {
-        return $this->belongsTo(Event::class, 'evt_id', 'evt_id');
-    }
-
+public function participants()
+{
+    return $this->belongsToMany(Volunteer::class, 'event_participation', 'evt_id', 'vol_id')
+                ->withPivot('status', 'created_at', 'updated_at');
 }
+
+
+
+    public function organizer()
+    {
+        return $this->belongsTo(Organizer::class, 'org_id', 'org_id');
+        // belongsTo(TargetModel::class, foreignKeyOnThisModel, ownerKeyOnTarget)
+    }
+}
+
+
