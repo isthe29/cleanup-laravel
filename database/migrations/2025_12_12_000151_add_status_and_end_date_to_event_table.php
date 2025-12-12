@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('event', function (Blueprint $table) {
-            $table->timestamps();
+            $table->date('end_date')->nullable()->after('evt_date'); // end date for duration events
+            $table->enum('status', ['upcoming', 'ongoing', 'completed'])
+              ->default('upcoming')
+              ->after('end_date');
         });
     }
 
@@ -22,7 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('event', function (Blueprint $table) {
-            $table->dropColumn(['created_at', 'updated_at']);
+            $table->dropColumn('status', 'end_date');
         });
     }
 };

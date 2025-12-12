@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use App\Notifications\CustomVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $table = 'user';
     protected $primaryKey = 'usr_id';
@@ -25,6 +28,7 @@ class User extends Authenticatable
     // Hide password
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
     //helper functions for user type
@@ -48,5 +52,14 @@ class User extends Authenticatable
     public function details(){
         return $this->hasOne(UserDetail::class, 'usr_id', 'usr_id');
     }
+
+    public function sendEmailVerificationNotification(){
+        $this->notify(new CustomVerifyEmail());
+    }
+
+    public function getEmailForVerification(){
+        return $this->details ? $this->details->email_add : null;
+    }
+
 
 }

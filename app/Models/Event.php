@@ -9,11 +9,14 @@ class Event extends Model
     protected $primaryKey = 'evt_id';
     public $incrementing = true;
     protected $keyType = 'int';
+    public $timestamps = true;
 
     protected $fillable  = [
         'org_id',
         'evt_name',
         'evt_date',
+        'end_date',
+        'status',
         'evt_details',
         'trsh_collected_kg'
     ];
@@ -25,6 +28,11 @@ class Event extends Model
 
     public function participation() {
         return $this->hasMany(EventParticipation::class, 'evt_id'); //normal for pk != fk
+    }
+
+    public function event()
+    {
+        return $this->belongsTo(Event::class, 'evt_id', 'evt_id');
     }
 
 }

@@ -10,7 +10,7 @@ class EventParticipation extends Model
     protected $primaryKey = 'partptn_id';
     public $incrementing = true;
     protected $keyType = 'int';
-
+    
     protected $fillable = [
         'vol_id',
         'evt_id',

@@ -10,6 +10,7 @@ class EventLocation extends Model
     protected $primaryKey = 'evt_id';
     public $incrementing = false;
     protected $keyType = 'int';
+    public $timestamps = true;
 
     protected $fillable = [
         'evt_id',

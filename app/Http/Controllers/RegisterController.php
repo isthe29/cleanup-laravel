@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserDetail;
 use App\Models\Organizer;
+use App\Models\Volunteer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\Eloquent\MassAssignmentException;
+
 
 class RegisterController extends Controller
 {
@@ -32,12 +36,14 @@ class RegisterController extends Controller
             'password' => 'required|confirmed|min:8',
             'registered_as' => 'required|in:Volunteer,Organizer',
             'org_name' => [
+                'nullable',
                 'required_if:registered_as,Organizer',
                 'string',
                 'max:255',
                 'regex:/^[A-Za-z0-9\s\.\'\-&]+$/',
                 'not_regex:/^[0-9]+$/',
-            ],
+        ],
+
         ], [
             // Field-specific error messages
             'name.required' => 'Please enter your name.',
@@ -58,7 +64,9 @@ class RegisterController extends Controller
             'org_name.regex' => 'Organization name can only contain letters, numbers, spaces, periods, apostrophes, hyphens, and ampersands.',
             'org_name.not_regex' => 'Organization name cannot be only numbers.',
         ]);
-
+        // } catch (\Illuminate\Validation\ValidationException $e) {
+        //     logger()->error("VALIDATION ERROR", $e->errors());
+        // }
         // Return validation errors for each field
         if ($validator->fails()) {
             return redirect()->back()
@@ -66,44 +74,88 @@ class RegisterController extends Controller
                 ->withInput();
         }
 
-        DB::beginTransaction();
+       DB::beginTransaction();
 
-        try {
-            // Create User
-            $user = User::create([
-                'usr_name' => $request->name,
-                'password' => Hash::make($request->password),
-                'registered_as' => $request->registered_as,
-            ]);
+try {
+    try {
+    $user = User::create([
+        'usr_name' => $request->name,
+        'password' => Hash::make($request->password),
+        'registered_as' => $request->registered_as,
+    ]);
+} catch (\Exception $e) {
+    dd($e->getMessage(), $e->getTraceAsString());
+}
+    // Create UserDetail
+    UserDetail::create([
+        'usr_id' => $user->usr_id,
+        'email_add' => $request->email,
+    ]);
 
-            // Create UserDetail
-            UserDetail::create([
-                'usr_id' => $user->usr_id,
-                'email_add' => $request->email,
-            ]);
+    // If Organizer
+    if ($request->registered_as === 'Organizer') {
+        $orgName = ucwords(strtolower($request->org_name));
+        Organizer::create([
+            'org_id' => $user->usr_id,
+            'org_name' => $orgName,
+        ]);
+    }
 
-            // If Organizer, create organizer row
-            if ($request->registered_as === 'Organizer') {
-                $orgName = ucwords(strtolower($request->org_name));
-                Organizer::create([
-                    'org_id' => $user->usr_id,
-                    'org_name' => $orgName,
-                ]);
-            }
+    if ($request->registered_as === 'Volunteer') {
+        Volunteer::create([
+            'vol_id' => $user->usr_id,
+        ]);
+    }
 
-            DB::commit();
+    DB::commit();
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Registration failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
 
-            return redirect()->back()
-                ->with('error', 'Registration failed. Please try again.')
-                ->withInput();
-        }
+} catch (QueryException $e) {
+    DB::rollBack();
+
+    // Detect missing column, constraint failure, or invalid SQL
+    if (str_contains($e->getMessage(), 'Unknown column')) {
+        $message = 'A required database column is missing. Please contact support.';
+    } else {
+        $message = 'Registration failed due to a database error.';
+    }
+
+    Log::error('SQL ERROR DURING REGISTRATION', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+    ]);
+
+    return redirect()->back()
+        ->with('error', $message)
+        ->withInput();
+
+
+} catch (MassAssignmentException $e) {
+    DB::rollBack();
+
+    Log::error('MASS ASSIGNMENT ERROR', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+    ]);
+
+    return redirect()->back()
+        ->with('error', 'A required field is blocked from being saved. Please notify support.')
+        ->withInput();
+
+
+} catch (\Exception $e) {
+    DB::rollBack();
+
+    Log::error('GENERAL ERROR DURING REGISTRATION', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+    ]);
+
+    return redirect()->back()
+        ->with('error', 'Registration failed unexpectedly.')
+        ->withInput();
+}
+
 
         // 🔹 Automatically log in the user
         Auth::login($user);
@@ -117,8 +169,8 @@ class RegisterController extends Controller
         }
 
         // Redirect based on role
-        return $user->registered_as === 'Organizer'
-            ? redirect()->route('dashboard.organizer')
-            : redirect()->route('dashboard.volunteer');
+         return $user->registered_as === 'Organizer'
+            ? redirect()->route('dashboard.organizer')->with('success', 'Registration successful! Welcome, Organizer.')
+            : redirect()->route('dashboard.volunteer')->with('success', 'Registration successful! Welcome, Volunteer.');
     }
 }

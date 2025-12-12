@@ -26,4 +26,10 @@ class Organizer extends Model
     public function orgChart() {
         return $this->hasMany(OrganizerChart::class, 'org_id');
     }
+
+    public function events()
+    {
+        return $this->hasMany(Event::class, 'org_id', 'org_id');
+    }
+
 }

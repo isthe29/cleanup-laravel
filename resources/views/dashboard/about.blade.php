@@ -1,4 +1,4 @@
-@extends('layouts.master')
+@extends('layouts.logged')
 
 @section('title', 'About Us')
 

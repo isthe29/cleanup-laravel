@@ -13,12 +13,22 @@
     @endif
   </title>
 
+  @php
+    $dashboardRoute = null;
+    if(Auth::check()) {
+        $dashboardRoute = Auth::user()->registered_as === 'Organizer'
+            ? route('dashboard.organizer')
+            : route('dashboard.volunteer');
+    }
+  @endphp
+
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="{{ asset('images/logo_sm.png') }}">
 
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
 
   <style>
@@ -59,13 +69,28 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav me-auto">
-            <li class="nav-item"><a class="nav-link @if(request()->is('/')) active @endif" href="{{ route() }}">Dashboard</a></li>
-            <li class="nav-item"><a class="nav-link @if(request()->is('about')) active @endif" href="{{ route() }}">About Us</a></li>
-            <li class="nav-item"><a class="nav-link @if(request()->is('events')) active @endif" href="{{ route() }}">Events</a></li>
+            @if(Auth::check())
+              <li class="nav-item">
+                <a class="nav-link @yield('dashboard') @if(request()->is('dashboard/*')) active @endif" href="{{ $dashboardRoute }}">
+                  Dashboard
+                </a>
+              </li>
+            @endif
+
+    {{-- About Us --}}
+    <li class="nav-item">
+    <a class="nav-link @if(request()->is('about')) active @endif" href="{{ route('about') }}">
+        About Us
+    </a>
+</li>
+        <a class="nav-link @yield('events') @if(request()->is('/events')) active @endif" href="{{ route('dashboard.events') }}">
+                Events
+            </a>
+    </li>
+</ul>
           </ul>
           <div class="d-flex">
-            <button class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#loginModal">Login</button>
-            <button class="btn btn-outline-light btn-sm" onclick="window.location.href='{{ url('/signup') }}'">Sign Up</button>
+
           </div>
         </div>
       </div>

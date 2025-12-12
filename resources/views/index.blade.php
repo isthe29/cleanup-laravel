@@ -40,9 +40,6 @@
               </div>
               <p class="lead text-start">Our oceans give us life, beauty, and joy—but they need our help. Every year, thousands of kilos of waste end up on our beaches and in our waters. This hub was created to encourage students and community members to take part in local beach and ocean clean-up drives.</p>
               <p class="lead text-start">Together, we can raise awareness, protect marine life, and keep our shores clean for future generations. Join us and be part of the movement toward a healthier, cleaner environment.</p>
-              <div class="text-center mt-4">
-                <a href="login.html" class="btn btn-outline-light btn-lg fw-bold">Join us!</a>
-              </div>
             </div>
           </div>
         </div>
@@ -84,7 +81,7 @@
 
     <div class="container my-5">
       <div class="card shadow-lg border-0 rounded-4 p-5 text-center"style="background: linear-gradient(135deg, #219ebc 0%, #8ecae6 100%);color: #ffffff; opacity: 0.95;">
-        <h2 class="fw-bold mb-4">How You Can Help</h2>
+        <h2 class="fw-bold mb-4" id="HowCanHelp">How You Can Help</h2>
         <p class="lead mb-4">Everyone can make a difference! Whether big or small, your actions help keep our oceans and beaches clean for future generations.</p>
 
         <div class="row g-4">
@@ -108,6 +105,13 @@
               <p>Reduce plastic use, recycle, and adopt eco-friendly habits daily.</p>
             </div>
           </div>
+        </div>
+        <div class="text-center mt-4">
+            <button type="button" class="btn btn-outline-light btn-lg fw-bold" 
+                data-bs-toggle="modal" 
+                data-bs-target="#authModal">
+                Join us!
+            </button>
         </div>
       </div>
     </div>
